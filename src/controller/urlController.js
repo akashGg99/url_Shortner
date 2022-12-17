@@ -9,7 +9,7 @@ const { isvalidUrl } = require('../validation/validator')
 
 //---------------------------------------------- REDIS CONNECT -------------------------------------------------//
 
-//1. Connect to the redis server
+//1. Connecting to the redis server
 const redisClient = redis.createClient(
     15685,
     "redis-15685.c264.ap-south-1-1.ec2.cloud.redislabs.com",
@@ -25,38 +25,36 @@ redisClient.on("connect", async function () {
 
 
 //2. Prepare the functions for each command
-
 const SET_ASYNC = promisify(redisClient.SET).bind(redisClient);
 const GET_ASYNC = promisify(redisClient.GET).bind(redisClient);
 
 //----------------------------------------------------------------------------------------------------------------//
 
 
-//---------------------------------------------- URL SHORTEN -------------------------------------------------//
 
+
+//---------------------------------------------- URL SHORTEN -------------------------------------------------//
+//1.
 const shortUrl = async (req, res) => {
     try {
         const bodyData = req.body.longUrl
 
-        if (Object.keys(req.body).length === 0) {
-            return res.status(400).send({ status: false, message: "The body can not be empty." })
-        }
+        if (Object.keys(req.body).length === 0) { return res.status(400).send({ status: false, message: "The body can not be empty." })  }
 
-        if (!bodyData) {
-            return res.status(400).send({ status: false, message: "Please provide longUrl in body." })
-        }
+        if (!bodyData) { return res.status(400).send({ status: false, message: "Please provide longUrl in body." }) }
 
-        if (!isvalidUrl(bodyData)) {
-            return res.status(400).send({ status: false, message: "please enter valid Url." })
-        }
+        if (!isvalidUrl(bodyData)) { return res.status(400).send({ status: false, message: "please enter valid Url." }) }
 
+
+        //initially checking cache  for data
         const checkCacheUnique = await GET_ASYNC(`${bodyData}`)
 
-        if (checkCacheUnique)
+        if (checkCacheUnique){
             return res.status(200).send({
-                status: true, message: "The url is already shortened(from cache).", data: JSON.parse(checkCacheUnique)
-            })
+                status: true, message: "The url is already shortened(from cache).", data: JSON.parse(checkCacheUnique) })
+        }
 
+        //DB search for duplicate entries..
         const uniqueCheck = await urlModel.findOne({ longUrl: bodyData }).select({ _id: 0, createdAt: 0, updatedAt: 0, __v: 0 })
 
         if (uniqueCheck) {
@@ -64,27 +62,27 @@ const shortUrl = async (req, res) => {
             return res.status(200).send({ status: true, message: "The url is already shortened.", data: uniqueCheck })
         }
 
+        //Axios call checking if it is live url or not....
         const checkingUrl = await axios.get(bodyData)
-            .then(() => bodyData)
+            // .then(() => bodyData)
             .catch(() => null)
 
-        if (!checkingUrl) {
-            return res.status(400).send({ status: false, message: "Please provide valid longUrl." })
-        }
+        if (!checkingUrl) { return res.status(400).send({ status: false, message: "Please provide valid longUrl." }) }
 
+
+        //generating the urlcode & shortUrl...
         let urlCode = shortid.generate()
-
         let shortUrl = "http://localhost:3000" + "/" + urlCode;
 
+        //creating entry in DB...
         const url = {
             longUrl: bodyData,
             shortUrl: shortUrl,
             urlCode: urlCode
         }
-
         const urlData = await urlModel.create(url)
 
-        //SET CACHE
+        //setting the data in cache also..
         await SET_ASYNC(`${bodyData}`, JSON.stringify(url), "EX", 120)
 
         return res.status(201).send({ status: true, data: url })
@@ -99,34 +97,32 @@ const shortUrl = async (req, res) => {
 
 
 //------------------------------------------- REDIRECTING URL ---------------------------------------------------//
-
+//2.
 const getShortUrl = async (req, res) => {
-    try {
+try {
         urlCode = req.params.urlCode
 
-        if (!urlCode) {
-            return res.status(400).send({ status: false, message: "please provide uriCode in params" })
-        }
+        if (!urlCode) { return res.status(400).send({ status: false, message: "please provide uriCode in params" })  }
 
+        //intially searching cache storage
         let cahcedUrlData = await GET_ASYNC(`${urlCode}`)
 
-        if (cahcedUrlData) {
-            return res.status(302).redirect(cahcedUrlData)
-        }
-        else {
+        if (cahcedUrlData) { return res.status(302).redirect(cahcedUrlData) } 
+
+        else{ 
+            //finding in DB..
             const urlData = await urlModel.findOne({ urlCode })
 
-            if (!urlData) {
-                return res.status(404).send({ status: false, message: "no url found with this urlCode." })
-            }
+            if (!urlData) { return res.status(404).send({ status: false, message: "no url found with this urlCode." }) }
 
+            //setting data in cache for future requests..
             const longUrl = urlData.longUrl
-
             await SET_ASYNC(`${urlCode}`, (longUrl), "EX", 120)
 
             return res.status(302).redirect(longUrl)
         }
-    } catch (error) {
+    } 
+    catch (error) {
         return res.status(500).send({ status: false, message: error.message })
     }
 }

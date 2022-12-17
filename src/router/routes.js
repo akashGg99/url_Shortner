@@ -9,6 +9,9 @@ router.post('/url/shorten', urlController.shortUrl)
 // REDIRECTING URL
 router.get('/:urlCode', urlController.getShortUrl)
 
+
+
+
 // CHECKING PATH
 router.all('/*', function (req, res) {
     return res.status(400).send({ status: false, message: "Please provide valid path." })

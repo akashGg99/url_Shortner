@@ -9,17 +9,20 @@ const urlSchema = new mongoose.Schema(
             lowercase: true,
             trim: true
         },
+
         longUrl: {
             type: String,
             required: true,
             trim: true
         },
+
         shortUrl: {
             type: String,
             required: true,
             unique: true
         }
     },
+    
     { timestamps: true }
 )
 

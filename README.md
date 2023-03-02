@@ -1,4 +1,3 @@
-# Lithium
 
 ## Scalable URL Shortner Project Requirement
 

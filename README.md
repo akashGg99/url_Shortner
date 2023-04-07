@@ -1,5 +1,7 @@
 
-## Scalable URL Shortner Project Requirement
+## URL Shortner Project 
+This project creates a shortened url in exchange of a long url which is usually inconvinient to share.
+The short url generated points to the same long url address.
 
 ## Phase I
 

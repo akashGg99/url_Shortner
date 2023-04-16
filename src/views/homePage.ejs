@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>using ejs here
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <h1>URL Shortener</h1>
+    <hr>
+    <% if (locals.url) { %>
+     <div>Here is your short url  <a href="<%= url %>"> <%= url %></a> </div>
+    <% } %>
+    <p> </p>
+    <form method="post" action="/url/shorten">
+        <label>Enter your original URL </label>
+        <input type="text" name="longUrl"  placeholder="https://www.example.com">
+        <button type="submit">Generate ShortURL</button>
+    </form>
+</body>
+</html>
